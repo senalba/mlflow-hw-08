@@ -1,0 +1,14 @@
+# Core ML & data libraries
+pandas
+numpy
+scikit-learn
+torch
+
+# AWS interaction
+boto3
+
+# MLflow for experiment tracking
+mlflow
+
+# Environment variable support
+python-dotenv
