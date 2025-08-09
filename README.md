@@ -1,6 +1,6 @@
 # Titanic MLOps Pipeline with AWS, MLflow, and Docker
 
-## Overview
+## 🧭 Overview
 
 This project provides a complete, end-to-end MLOps pipeline for the classic Titanic survival prediction problem. It demonstrates best practices for building a modular, scalable, and reproducible machine learning system using modern tools.
 
@@ -16,6 +16,18 @@ The pipeline fetches the Titanic dataset, preprocesses it, trains multiple model
 *   **Experiment Tracking (MLflow)**: All training runs, parameters, metrics, and model artifacts are logged to an MLflow Tracking Server, which can be run locally via Docker Compose.
 *   **Containerization (Docker)**: The entire environment, including the MLflow server and the training pipeline, is containerized with Docker and orchestrated with Docker Compose for easy setup and execution.
 *   **Inference (AWS Lambda)**: An optional Lambda function (`lambda/handler.py`) is provided to demonstrate how a trained model could be deployed for serverless inference.
+
+---
+
+## 🖼️ Screenshots
+
+Here is a screenshot of the MLflow UI showing the experiment runs:
+
+![MLflow Experiments](screenshots/Screenshot%202025-08-08%20at%2019.49.00.png)
+
+And here is a view of the artifacts logged for a specific run:
+
+![MLflow Artifacts](screenshots/Screenshot%202025-08-08%20at%2019.49.36.png)
 
 ---
 
