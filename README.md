@@ -80,8 +80,10 @@ AWS_DEFAULT_REGION=us-east-1
 
 ### 2. Upload Dataset to S3
 
-Make sure `titanic.csv` exists in the `src/` folder. Then, run the following command to start the MLflow server and the training container. The `main.py` script will automatically upload the dataset to your S3 bucket if it's not already there.
-
+ Artifacts appear in:
+```s3://$MLFLOW_ARTIFACTS_BUCKET/mlflow-artifacts/...```
+Dataset is stored at:
+```s3://$MLFLOW_ARTIFACTS_BUCKET/$DATA_S3_PREFIX/titanic.csv```
 ---
 
 ## 🚀 Usage
@@ -101,3 +103,5 @@ This command will:
     *   Ensure the Titanic dataset is in your S3 bucket.
     *   Train both the RandomForest and PyTorch MLP models.
     *   Log all experiments, parameters, and metrics to the MLflow server.
+
+
