@@ -80,10 +80,11 @@ AWS_DEFAULT_REGION=us-east-1
 
 ### 2. Upload Dataset to S3
 
- Artifacts appear in:
-```s3://$MLFLOW_ARTIFACTS_BUCKET/mlflow-artifacts/...```
+Artifacts appear in:
+`s3://$MLFLOW_ARTIFACTS_BUCKET/mlflow-artifacts/...`
+
 Dataset is stored at:
-```s3://$MLFLOW_ARTIFACTS_BUCKET/$DATA_S3_PREFIX/titanic.csv```
+`s3://$MLFLOW_ARTIFACTS_BUCKET/$DATA_S3_PREFIX/titanic.csv`
 ---
 
 ## 🚀 Usage
