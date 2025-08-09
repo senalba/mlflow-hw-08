@@ -106,3 +106,38 @@ This command will:
     *   Log all experiments, parameters, and metrics to the MLflow server.
 
 
+## AWS Lambda Inference (optional)
+
+This repo includes a minimal **serverless inference** path for the RandomForest model using **AWS Lambda**.
+
+### What training exports
+During training, the pipeline writes a lightweight “serving bundle” to S3:
+- `model.pkl` – the trained **scikit-learn** RandomForest
+- `preprocess.json` – metadata for inference (feature order + medians for imputation)
+
+S3 location:
+`s3://$MODEL_BUCKET/$MODEL_BASE/`
+e.g. `s3://mlflow-vasyl-a-titanic/serving/random_forest/`
+
+ Configure via env:
+> - `MODEL_BUCKET` (defaults to `MLFLOW_ARTIFACTS_BUCKET`)
+> - `MODEL_BASE` (defaults to `serving/random_forest`)
+
+### Lambda implementation
+- Code: `lambda/handler.py`
+- Container image: `Dockerfile.lambda` (base: `public.ecr.aws/lambda/python:3.10`)
+- **Version pins** (match trainer to avoid pickle/ABI issues):  
+  `boto3==1.34.162`, `joblib==1.5.1`, `numpy==2.2.6`, `scipy==1.15.3`, `scikit-learn==1.7.1` (in `lambda/requirements.txt`)
+
+### Local testing (via Docker Compose)
+1) Ensure the bundle exists:
+```bash
+> aws s3 ls "s3://$MODEL_BUCKET/$MODEL_BASE/"
+2025-08-08 22:07:05     564809 model.pkl
+2025-08-08 22:07:06        215 preprocess.json
+```
+2) Invoke locally:
+```bash
+❯ curl -s http://localhost:9000/2015-03-31/functions/function/invocations -d '{"instances":[{"Pclass":3,"Age":22,"Siblings/Spouses Aboard":1,"Parents/Children Aboard":0,"Fare":7.25}]}' 
+{"predictions": [0], "probabilities": [0.22821913745252861]}%
+```

@@ -37,3 +37,23 @@ services:
     volumes:
       - .:/app
     command: python main.py
+
+  lambda:
+    platform: "linux/amd64"
+    build:
+      context: .
+      dockerfile: Dockerfile.lambda   # uses the AWS Lambda base image
+    container_name: titanic-lambda
+    environment:
+      # S3 access for downloading the bundle
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+
+      # Where the bundle is stored (must match what training exported)
+      - MODEL_BUCKET=${MODEL_BUCKET:-${MLFLOW_ARTIFACTS_BUCKET}}
+      - MODEL_BASE=${MODEL_BASE:-serving/random_forest}
+    ports:
+      - "9000:8080"   # local port 9000 → lambda runtime 8080
+    # optional: start only when you want to test lambda
+    # profiles: ["lambda"]

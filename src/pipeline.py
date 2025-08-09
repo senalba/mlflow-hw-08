@@ -1,4 +1,8 @@
 import os
+import json 
+import tempfile
+from joblib import dump
+
 from typing import Any, Callable, Dict, Optional, Tuple
 
 import pandas as pd
@@ -71,9 +75,12 @@ class MLOpsTitanicPipeline:
 
     def preprocess(self, df: pd.DataFrame) -> pd.DataFrame:
         df = df[self.features + ["Survived"]].copy()
+        self.medians = {}
         for col in self.features:
+            m = float(df[col].median())
+            self.medians[col] = m
             if df[col].isnull().any():
-                df[col] = df[col].fillna(df[col].median())
+                df[col] = df[col].fillna(m)
         return df
 
     def train(
@@ -84,9 +91,6 @@ class MLOpsTitanicPipeline:
         log_to_mlflow: bool = True,
         model_name: Optional[str] = None,
     ) -> Tuple[Any, Dict[str, Any]]:
-        """
-        train_strategy: callable that returns (model, metrics_dict, signature, input_example)
-        """
         if not log_to_mlflow:
             model, metrics, signature, input_example = train_strategy(
                 df, **strategy_params
@@ -94,7 +98,6 @@ class MLOpsTitanicPipeline:
             return model, metrics
 
         # name the run so it’s easy to spot
-        # with mlflow.start_run(run_name=model_name or "train"):
         with mlflow.start_run(run_name=model_name or "train", nested=True):
             model, metrics, signature, input_example = train_strategy(
                 df, **strategy_params
@@ -125,6 +128,40 @@ class MLOpsTitanicPipeline:
                     input_example=input_example,
                     await_registration_for=None,
                 )
+                try:
+                    # Export serving bundle for Lambda
+                    # Note: this is a workaround for the fact that sklearn models
+                    # cannot be directly used in Lambda without preprocessing.
+                    # We create a simple preprocessing step that fills missing values
+                    # with the median of each feature.
+                    # This is not ideal, but it works for this example.
+                    # recompute medians from the df used for training (OK after fillna)
+                    medians = {c: float(df[c].median()) for c in self.features}
+                    serving_prefix = os.getenv("SERVING_S3_PREFIX", "serving/random_forest")
+
+                    with tempfile.TemporaryDirectory() as d:
+                        model_path = os.path.join(d, "model.pkl")
+                        prep_path = os.path.join(d, "preprocess.json")
+
+                        dump(model, model_path)
+                        with open(prep_path, "w", encoding="utf-8") as f:
+                            json.dump({"features": self.features, "medians": medians}, f, ensure_ascii=False)
+
+                        # 1) keep a copy in this MLflow run
+                        mlflow.log_artifact(model_path, artifact_path="serving_bundle")
+                        mlflow.log_artifact(prep_path, artifact_path="serving_bundle")
+
+                        # 2) upload the bundle to S3 for Lambda
+                        self.s3.upload_file(model_path, self.bucket_name, f"{serving_prefix}/model.pkl")
+                        self.s3.upload_file(prep_path, self.bucket_name, f"{serving_prefix}/preprocess.json")
+
+                    mlflow.set_tags({
+                        "lambda_model_bucket": self.bucket_name,
+                        "lambda_model_prefix": serving_prefix,
+                    })
+                    print(f"Exported serving bundle to s3://{self.bucket_name}/{serving_prefix}/")
+                except Exception as e:
+                    print(f"Failed to export serving bundle for Lambda: {e}")
             elif model_name == "PyTorchMLP":
                 mlflow.pytorch.log_model(
                     pytorch_model=model,
@@ -143,6 +180,7 @@ class MLOpsTitanicPipeline:
                 )
 
             return model, metrics
+        
     def run(self, train_file, strategies):
         df_train = self.load_csv_from_s3(train_file)
         df_train = self.preprocess(df_train)
