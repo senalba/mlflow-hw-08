@@ -281,5 +281,5 @@ ui/out/
 tmp/
 
 
-mlflow
-mlflow/*
+mlruns
+mlruns/*
