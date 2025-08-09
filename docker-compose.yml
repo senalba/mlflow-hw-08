@@ -1,18 +1,22 @@
 services:
 
   mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.12.1
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
+      args:
+        MLFLOW_VERSION: ${MLFLOW_VERSION}
     container_name: mlflow-server
     environment:
-      - MLFLOW_TRACKING_URI=http://0.0.0.0:5000
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
     ports:
-      - "5000:5000"
+      - "5050:5000"
     volumes:
-      - ./mlruns:/mlflow/mlruns
-    command: mlflow server --backend-store-uri /mlflow/mlruns --host 0.0.0.0 --port 5000
+      - ./mlflow_db:/mlflow/db
+    command: >
+      mlflow server --backend-store-uri sqlite:////mlflow/db/mlflow.db --artifacts-destination s3://${MLFLOW_ARTIFACTS_BUCKET}/mlflow-artifacts --host 0.0.0.0 --port 5000
 
   trainer:
     build:
@@ -26,6 +30,10 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - GIT_PYTHON_REFRESH=quiet
+      - GIT_PYTHON_GIT_EXECUTABLE=/usr/bin/git
+      - DATASET_LOCAL_PATH=/app/titanic.csv
+      - PYTHONUNBUFFERED=1
     volumes:
       - .:/app
-    command: python src/main.py
+    command: python main.py

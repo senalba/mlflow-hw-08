@@ -2,13 +2,17 @@
 pandas
 numpy
 scikit-learn
-torch
+torch; sys_platform != 'darwin' or platform_machine != 'arm64'
 
 # AWS interaction
 boto3
+botocore
+s3fs>=2023.6.0
+cloudpickle
 
 # MLflow for experiment tracking
-mlflow
+mlflow>=3.0.0,<4
 
 # Environment variable support
 python-dotenv
+pyyaml
